@@ -1,11 +1,11 @@
 import numpy as np
 import pandas as pd
 
-from config import * 
+from src.config import * 
 
 def handle_anomaly(df):
     """
-    Treat known data anomalies:
+    Treat data anomalies:
       - DAYS_EMPLOYED == 365243 -> means "not currently employed" (replace with NaN).
       - CODE_GENDER == 'XNA' -> unknown category, map to the most frequent valid gender.
       - DAYS_* columns are stored as negative integers (days relative to
