@@ -1,19 +1,20 @@
 import pandas as pd
 import os
-from config import * 
+from src.config import * 
 
 def load_data(df_name, data_dir="data"):
     """
-    Load a csv file anf return a DataFrame.
+    Load a CSV file and return a DataFrame.
     """
     file_name = None
+
     for fn, name in TABLE_FILES.items():
         if name == df_name:
-            file_name = fn
+            file_name = name
             break
     
     if file_name is None:
-        raise ValueError(f"Table name '{df_name}' not found in config.TABLE_FILES.")
+        raise ValueError(f"Table '{df_name}' not found in config.TABLE_FILES.")
     
     file_path = os.path.join(data_dir, file_name)
     
