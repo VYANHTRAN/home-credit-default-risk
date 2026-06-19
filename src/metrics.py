@@ -13,7 +13,7 @@ from sklearn.metrics import (
     roc_curve,
 )
 
-from config import * 
+from src.config import * 
 
 if TYPE_CHECKING:
     from modelling import ModelResult
@@ -93,6 +93,7 @@ def plot_feature_importance(
     label: str,
     top_n: int = 30,
     save_dir: str = "results",
+    idx: int = 0,
 ):
     """
     Horizontal bar chart of the top-N features by mean gain.
@@ -102,7 +103,7 @@ def plot_feature_importance(
     df = result.feature_importance.head(top_n).copy()
     df = df.sort_values("importance")           # ascending so top is at top of hbar
 
-    color = _color(label)
+    color = _color(label, idx)
     fig, ax = plt.subplots(figsize=(8, max(4, top_n * 0.28)))
     ax.barh(df["feature"], df["importance"], color=color, alpha=0.85)
     ax.set_xlabel("Mean Split Importance", fontsize=10)
