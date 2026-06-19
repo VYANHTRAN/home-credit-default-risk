@@ -24,6 +24,10 @@ HIGH_CORR_THRESHOLD = 0.8
 # Skewness threshold above which a numeric column is log-transformed
 SKEW_THRESHOLD = 1.0
 
+# ID and target columns 
+ID_COL = "SK_ID_CURR"
+TARGET_COL = "TARGET"
+
 # Parameters for LightGBM model 
 DEFAULT_PARAMS: dict = {
     "objective": "binary",
@@ -47,6 +51,8 @@ DEFAULT_PARAMS: dict = {
 
 EARLY_STOPPING_ROUNDS = 100
 VERBOSE_EVAL = 200
+
+NUMERIC_AGGS = ["mean", "sum", "min", "max", "count"]
 
 # Default style 
 PALETTE = {
