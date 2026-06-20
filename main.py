@@ -110,6 +110,43 @@ def sanitize_feature_names(df):
     return df
 
 
+def predict_test(result, test):
+    """
+    Average predicted probabilities across all fold models for the test set.
+    """
+    X_test, _ = get_feature_matrix_test(test)
+    preds = np.zeros(len(X_test))
+
+    for model in result.models:
+        preds += model.predict_proba(X_test)[:, 1]
+
+    return preds / len(result.models)
+
+
+def get_feature_matrix_test(df):
+    """
+    Like get_feature_matrix but safe to call on test (no TARGET column).
+    """
+    drop_cols = [c for c in (ID_COL, TARGET_COL) if c in df.columns]
+    X = df.drop(columns=drop_cols)
+    X = sanitize_feature_names(X)
+    return X, None
+
+
+def export_submission(test_df, preds, label, predictions_dir):
+    """
+    Save a Kaggle-format submission CSV: SK_ID_CURR, TARGET.
+    """
+    os.makedirs(predictions_dir, exist_ok=True)
+    submission = pd.DataFrame({
+        ID_COL: test_df[ID_COL].values,
+        TARGET_COL: preds,
+    })
+    out_path = os.path.join(predictions_dir, f"submission_{label}.csv")
+    submission.to_csv(out_path, index=False)
+    print(f"[Saved] {out_path}  ({len(submission):,} rows)")
+
+
 def get_feature_matrix(df):
     drop_cols = [c for c in (ID_COL, TARGET_COL) if c in df.columns]
 
@@ -199,6 +236,16 @@ def main():
 
     for idx, (label, result) in enumerate(results.items()):
         plot_feature_importance(result, label=label, save_dir=args.results_dir, idx=idx)
+
+    # 6. Export test predictions
+    print("\nExporting test predictions...")
+    if run_raw and "raw" in results:
+        preds_raw = predict_test(results["raw"], test_raw)
+        export_submission(test_raw, preds_raw, "raw", PREDICTIONS_DIR)
+
+    if run_processed and "processed" in results:
+        preds_proc = predict_test(results["processed"], test_proc)
+        export_submission(test_proc, preds_proc, "processed", PREDICTIONS_DIR)
 
     print("\nDone. Results saved to:", args.results_dir)
 
