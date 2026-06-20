@@ -75,3 +75,4 @@ plt.rcParams.update({
 
 # Directory for results
 RESULTS_DIR = "results"
+PREDICTIONS_DIR = "predictions"
