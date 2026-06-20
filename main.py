@@ -133,11 +133,25 @@ def main():
     parser = argparse.ArgumentParser(description="Home Credit Default Risk pipeline")
     parser.add_argument("--data-dir", default="data", help="Directory containing the raw CSV files")
     parser.add_argument("--results-dir", default=RESULTS_DIR, help="Directory to save plots/results")
+    parser.add_argument(
+        "--pipeline",
+        choices=["raw", "processed", "both"],
+        default="both",
+        help=(
+            "Which pipeline(s) to run: "
+            "'raw' (baseline, no feature engineering), "
+            "'processed' (engineered features + preprocessing), "
+            "or 'both' to run and compare (default: both)"
+        ),
+    )
     args = parser.parse_args()
+
+    run_raw = args.pipeline in ("raw", "both")
+    run_processed = args.pipeline in ("processed", "both")
 
     os.makedirs(args.results_dir, exist_ok=True)
 
-    # 1. Load every tables
+    # 1. Load all tables
     print("Loading all tables...")
     tables = load_all_tables(args.data_dir)
 
@@ -147,27 +161,41 @@ def main():
     print(f"Train shape after merge: {train_merged.shape}")
     print(f"Test shape after merge : {test_merged.shape}")
 
-    # 3a. Raw pipeline
-    print("\nBuilding raw dataset (no feature engineering)...")
-    train_raw, test_raw = build_raw_dataset(train_merged, test_merged)
-    print(f"Train (raw) shape: {train_raw.shape}")
+    # 3. Build requested datasets
+    train_raw = test_raw = train_proc = test_proc = None
 
-    # 3b. Processed pipeline
-    print("\nBuilding processed dataset (engineered features + preprocessing)...")
-    train_proc, test_proc = build_processed_dataset(train_merged, test_merged)
-    print(f"Train (processed) shape: {train_proc.shape}")
+    if run_raw:
+        print("\nBuilding raw dataset (no feature engineering)...")
+        train_raw, test_raw = build_raw_dataset(train_merged, test_merged)
+        print(f"Train (raw) shape: {train_raw.shape}")
 
-    # 4. Train both models
+    if run_processed:
+        print("\nBuilding processed dataset (engineered features + preprocessing)...")
+        train_proc, test_proc = build_processed_dataset(train_merged, test_merged)
+        print(f"Train (processed) shape: {train_proc.shape}")
+
+    # 4. Train requested models
     results = {}
-    results["raw"] = run_pipeline("raw", train_raw, DEFAULT_PARAMS)
-    results["processed"] = run_pipeline("processed", train_proc, DEFAULT_PARAMS)
 
-    # 5. Compare
-    y_train = train_raw[TARGET_COL]  
-    
+    if run_raw:
+        results["raw"] = run_pipeline("raw", train_raw, DEFAULT_PARAMS)
+
+    if run_processed:
+        results["processed"] = run_pipeline("processed", train_proc, DEFAULT_PARAMS)
+
+    # 5. Evaluate and plot
+    # Use whichever train split is available to recover y_true
+    ref_train = train_raw if train_raw is not None else train_proc
+    y_train = ref_train[TARGET_COL]
+
     print_summary_table(results, y_train)
-    plot_roc_comparison(results, y_train, save_dir=args.results_dir)
-    plot_fold_scores(results, save_dir=args.results_dir)
+
+    # ROC comparison and fold scores only make sense with multiple models
+    if len(results) > 1:
+        plot_roc_comparison(results, y_train, save_dir=args.results_dir)
+        plot_fold_scores(results, save_dir=args.results_dir)
+    else:
+        print("(Skipping ROC comparison and fold-score plots — only one pipeline was run)")
 
     for idx, (label, result) in enumerate(results.items()):
         plot_feature_importance(result, label=label, save_dir=args.results_dir, idx=idx)
