@@ -4,30 +4,15 @@ import pandas as pd
 from src.config import * 
 
 def handle_anomaly(df):
-    """
-    Treat data anomalies:
-      - DAYS_EMPLOYED == 365243 -> means "not currently employed" (replace with NaN).
-      - CODE_GENDER == 'XNA' -> unknown category, map to the most frequent valid gender.
-      - DAYS_* columns are stored as negative integers (days relative to
-        application date); convert to positive "years" for readability where
-        it helps downstream modelling (DAYS_BIRTH -> AGE_YEARS).
-    """
-
     df = df.copy()
     df.loc[df["DAYS_EMPLOYED"] == DAYS_EMPLOYED_ANOMALY, "DAYS_EMPLOYED"] = np.nan
 
     if "CODE_GENDER" in df.columns:
         valid_genders = df.loc[df["CODE_GENDER"] != "XNA", "CODE_GENDER"]
-
         if not valid_genders.empty:
             mode_gender = valid_genders.mode().iloc[0]
             df.loc[df["CODE_GENDER"] == "XNA", "CODE_GENDER"] = mode_gender
 
-    if "DAYS_BIRTH" in df.columns:
-        df["AGE_YEARS"] = (-df["DAYS_BIRTH"] / 365.25).round(1)
-
-    df = df.drop(columns=["DAYS_BIRTH"])
- 
     return df
 
 def encode_categorical(train, test=None):
@@ -163,6 +148,11 @@ def find_skewed_columns(df, skew_threshold=SKEW_THRESHOLD, exclude_cols=("TARGET
         skew = series.skew()
         if abs(skew) > skew_threshold:
             skewed_cols.append(col)
+
+    skewed_cols = [
+        c for c in skewed_cols
+        if not any(c.startswith(p) for p in ENGINEERED_PREFIXES)
+    ]
  
     return skewed_cols
  
