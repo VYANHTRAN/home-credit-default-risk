@@ -28,6 +28,12 @@ SKEW_THRESHOLD = 1.0
 ID_COL = "SK_ID_CURR"
 TARGET_COL = "TARGET"
 
+# Columns which are engineered
+ENGINEERED_PREFIXES = (
+    "EXT_", "ANNUITY_", "CREDIT_", "RESIDUAL_", "INCOME_PER",
+    "RISK_", "AGE_", "EMPLOYMENT_", "DOCS_", "CONTACT_", "OVER_",
+)
+
 # Parameters for LightGBM model 
 DEFAULT_PARAMS: dict = {
     "objective": "binary",
